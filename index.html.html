@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NMMS வினாத்தாள், OMR & விடைக்குறிப்பு உருவாக்கி (NMMS Question Paper Generator)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Noto Sans Tamil & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- MathJax 3 Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Tamil', sans-serif;
+            background-color: #cbd5e1;
+        }
+
+        .tamil-font {
+            font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
+        }
+
+        /* A4 Paper Dimensions & Print Styling */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            margin: 0 auto 24px auto;
+            padding: 10mm 12mm;
+            box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.22);
+            color: #0f172a;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Page Border Styles */
+        .frame-double {
+            border: 3.5px double #0f172a;
+            padding: 6mm 7mm;
+            min-height: 277mm;
+        }
+        .frame-single {
+            border: 1.5px solid #0f172a;
+            padding: 6mm 7mm;
+            min-height: 277mm;
+        }
+        .frame-none {
+            border: none;
+            padding: 1mm;
+            min-height: 277mm;
+        }
+
+        /* 2-Column Newspaper/Booklet Layout */
+        .booklet-two-col {
+            column-count: 2;
+            column-gap: 6mm;
+            column-rule: 1px solid #cbd5e1;
+        }
+
+        /* Prevent splitting individual questions across columns or pages */
+        .q-card-print {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Watermark Overlay */
+        .watermark-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 38pt;
+            font-weight: 800;
+            color: rgba(15, 23, 42, 0.045);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
+        }
+
+        /* OMR Bubble Styling */
+        .omr-bubble {
+            width: 17px;
+            height: 17px;
+            border: 1.2px solid #be123c;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #be123c;
+            line-height: 1;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Print Media Queries */
+        @media print {
+            body {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-area-wrapper {
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                background: #ffffff !important;
+                display: block !important;
+            }
+            .a4-page {
+                width: 100% !important;
+                min-height: auto !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                page-break-after: always;
+                break-after: page;
+            }
+            .a4-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            .frame-double, .frame-single, .frame-none {
+                min-height: auto !important;
+            }
+            .page-break-before {
+                page-break-before: always;
+                break-before: page;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 9mm;
+            }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- Top Application Header -->
+    <header class="no-print bg-indigo-950 text-white px-4 py-2.5 shadow-lg flex flex-wrap items-center justify-between gap-2 z-20 border-b border-indigo-800">
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-400 text-indigo-950 p-2 rounded-xl font-extrabold text-lg shadow">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-sm sm:text-base md:text-lg leading-tight">NMMS வினாத்தாள், OMR & விடைக்குறிப்பு உருவாக்கி</h1>
+                    <span class="hidden sm:inline-block bg-indigo-800 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-600">MAT & SAT</span>
+                </div>
+                <p class="text-[11px] text-indigo-200">National Means-cum-Merit Scholarship Exam Builder | தமிழ் & English | MathJax 3</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <button onclick="loadNMMSSampleData()" class="bg-indigo-800 hover:bg-indigo-700 text-amber-300 border border-indigo-600 text-xs px-2.5 py-2 rounded-lg font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>மாதிரி NMMS வினாக்கள்</span>
+            </button>
+
+            <button onclick="openBulkModal()" class="bg-teal-600 hover:bg-teal-500 text-white text-xs px-2.5 py-2 rounded-lg font-semibold transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-paste"></i>
+                <span>மொத்தமாக சேர் (Bulk)</span>
+            </button>
+
+            <button onclick="exportProjectJSON()" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 text-xs px-2.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5" title="Save Project File">
+                <i class="fa-solid fa-download text-sky-400"></i>
+                <span class="hidden md:inline">சேமி</span>
+            </button>
+
+            <label class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 text-xs px-2.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer" title="Load Saved Project">
+                <i class="fa-solid fa-folder-open text-emerald-400"></i>
+                <span class="hidden md:inline">திற</span>
+                <input type="file" accept=".json" class="hidden" onchange="importProjectJSON(event)">
+            </label>
+
+            <button onclick="window.print()" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-extrabold text-xs md:text-sm px-3.5 py-2 rounded-lg shadow-md transition flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i>
+                <span>Print / PDF சேமி</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastBanner" class="no-print fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center gap-2 border border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMsg">செயல்பாடு முடிந்தது!</span>
+    </div>
+
+    <!-- Main Split Workspace -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- LEFT SIDEBAR: NMMS Exam Settings & Question Builder -->
+        <aside class="no-print w-full lg:w-[470px] xl:w-[510px] bg-white border-r border-slate-300 flex flex-col h-full overflow-hidden">
+            
+            <!-- Editor Mode Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-100 text-xs font-bold">
+                <button id="tabBtnSetup" onclick="switchSidebarTab('setup')" class="flex-1 py-3 px-2 text-indigo-800 border-b-2 border-indigo-700 bg-white flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>1. தேர்வு & OMR அமைப்பு</span>
+                </button>
+                <button id="tabBtnQuestions" onclick="switchSidebarTab('questions')" class="flex-1 py-3 px-2 text-slate-600 hover:text-indigo-800 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>2. வினாக்கள் (<span id="badgeTotalQ">0</span>)</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: NMMS Exam Setup, Layout & OMR Options -->
+            <div id="panelSetup" class="p-4 overflow-y-auto flex-1 space-y-4">
+                
+                <!-- Quick Preset Selector for NMMS Paper Type -->
+                <div class="bg-indigo-50 p-3.5 rounded-xl border border-indigo-200 space-y-2.5">
+                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-500"></i> NMMS தேர்வு வகை (Paper Preset)
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="applyPaperPreset('MAT')" class="py-2 px-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-900 border border-indigo-300 rounded-lg text-[11px] font-bold transition shadow-sm text-center">
+                            MAT மட்டும்<br><span class="text-[10px] font-normal opacity-80">Q.1 – 90 (90m)</span>
+                        </button>
+                        <button type="button" onclick="applyPaperPreset('SAT')" class="py-2 px-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-900 border border-indigo-300 rounded-lg text-[11px] font-bold transition shadow-sm text-center">
+                            SAT மட்டும்<br><span class="text-[10px] font-normal opacity-80">Q.91 – 180 (90m)</span>
+                        </button>
+                        <button type="button" onclick="applyPaperPreset('FULL')" class="py-2 px-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-900 border border-indigo-300 rounded-lg text-[11px] font-bold transition shadow-sm text-center">
+                            முழுத் தேர்வு<br><span class="text-[10px] font-normal opacity-80">Q.1 – 180 (180m)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- School / Institution Header Details -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-school text-indigo-600"></i> வினாத்தாள் தலைப்பு விவரங்கள் (Header Details)
+                    </h2>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">பள்ளி / பயிற்சி மையம் பெயர் (School / Academy Name)</label>
+                        <input type="text" id="inpSchool" oninput="renderAllPreviews()" value="அரசு மேல்நிலைப்பள்ளி / NMMS பயிற்சி மையம்" class="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">தேர்வு பெயர் (Exam Title)</label>
+                            <input type="text" id="inpExamName" oninput="renderAllPreviews()" value="NMMS மாதிரித் தேர்வு / NMMS MOCK TEST - 2026" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">தாள் / பாடம் (Paper / Subject)</label>
+                            <input type="text" id="inpPaperSubject" oninput="renderAllPreviews()" value="MAT & SAT (மனத்திறன் & படிப்பறிவுத் தேர்வு)" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">வகுப்பு (Class)</label>
+                            <input type="text" id="inpClass" oninput="renderAllPreviews()" value="VIII (8-ஆம் வகுப்பு)" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">நேரம் (Time)</label>
+                            <input type="text" id="inpTime" oninput="renderAllPreviews()" value="90 நிமிடங்கள்" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">மதிப்பெண் (Marks)</label>
+                            <input type="text" id="inpMarks" oninput="renderAllPreviews()" value="90" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">தேதி (Date)</label>
+                            <input type="text" id="inpDate" oninput="renderAllPreviews()" value="17.11.2026" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">தொடக்க வினா எண் (Start Q.No)</label>
+                            <input type="number" id="inpStartQNum" oninput="renderAllPreviews()" value="1" min="1" max="180" class="w-full px-2.5 py-1.5 text-xs font-bold border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">பக்க வாட்டர்மார்க் (Watermark - Optional)</label>
+                            <input type="text" id="inpWatermark" oninput="renderAllPreviews()" placeholder="எ.கா: NMMS 2026" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">தேர்வு அறிவுரைகள் (Instructions)</label>
+                        <input type="text" id="inpInstructions" oninput="renderAllPreviews()" value="அனைத்து வினாக்களுக்கும் விடையளிக்கவும். தவறான விடைகளுக்கு மதிப்பெண் குறைக்கப்பட மாட்டாது. (No negative marks.)" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+
+                <!-- A4 Layout, Bilingual Mode & OMR / Answer Key Controls -->
+                <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                        <i class="fa-solid fa-table-columns text-amber-600"></i> A4 வடிவமைப்பு, OMR & விடைக்குறிப்பு
+                    </h2>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">வினாத்தாள் பத்தி அமைப்பு (Layout)</label>
+                            <select id="selPageLayout" onchange="renderAllPreviews()" class="w-full px-2 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white">
+                                <option value="stacked_1col">ஒற்றைப் பத்தி (Standard NMMS Booklet)</option>
+                                <option value="compact_2col" selected>இரண்டு பத்திகள் (2-Column Compact)</option>
+                                <option value="bilingual_split">இருபக்க இருமொழி (Tamil | English Split)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">மொழி காட்சி (Language Filter)</label>
+                            <select id="selLangFilter" onchange="renderAllPreviews()" class="w-full px-2 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white">
+                                <option value="both" selected>தமிழ் + English (Bilingual)</option>
+                                <option value="tamil">தமிழ் மட்டும் (Tamil Only)</option>
+                                <option value="english">English Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">ஆப்ஷன் வகை</label>
+                            <select id="selOptStyle" onchange="renderAllPreviews()" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white">
+                                <option value="num" selected>(1) (2) (3) (4)</option>
+                                <option value="alpha">(A) (B) (C) (D)</option>
+                                <option value="tamil">(அ) (ஆ) (இ) (ஈ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">எழுத்து அளவு</label>
+                            <select id="selFontSize" onchange="renderAllPreviews()" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white">
+                                <option value="9.5pt">9.5 pt (சிறியது)</option>
+                                <option value="10.5pt" selected>10.5 pt (இயல்பு)</option>
+                                <option value="11.5pt">11.5 pt (பெரியது)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">ஓரக் கோடு</label>
+                            <select id="selBorderStyle" onchange="renderAllPreviews()" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white">
+                                <option value="frame-double" selected>இரட்டைக் கோடு</option>
+                                <option value="frame-single">ஒற்றைக் கோடு</option>
+                                <option value="frame-none">கோடு இல்லை</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Checkboxes for Student Box, OMR Sheet & Answer Key -->
+                    <div class="space-y-2 pt-1 border-t border-amber-200/80">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                            <input type="checkbox" id="chkStudentHeader" checked onchange="renderAllPreviews()" class="rounded text-indigo-600 w-4 h-4">
+                            <span>மாணவர் பெயர் & பதிவு எண் கட்டம் (Student Info Box)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-rose-800 cursor-pointer">
+                            <input type="checkbox" id="chkIncludeOMR" checked onchange="renderAllPreviews()" class="rounded text-rose-600 w-4 h-4">
+                            <span>பயிற்சி OMR விடைத்தாள் இணைக்க (Printable NMMS OMR Sheet)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-emerald-800 cursor-pointer">
+                            <input type="checkbox" id="chkIncludeAnsKey" checked onchange="renderAllPreviews()" class="rounded text-emerald-600 w-4 h-4">
+                            <span>விடைக்குறிப்பு & குறுக்குவழி தீர்வுகள் (Answer Key & Shortcuts)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="switchSidebarTab('questions')" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl shadow transition flex items-center justify-center gap-2 text-xs sm:text-sm">
+                    <span>அடுத்து: NMMS வினாக்களைச் சேர்க்கவும்</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- TAB 2: Question Composer & Manager -->
+            <div id="panelQuestions" class="hidden flex-1 flex flex-col overflow-hidden">
+                
+                <!-- Topic Summary Strip -->
+                <div id="topicSummaryBar" class="px-3 py-1.5 bg-indigo-950 text-indigo-100 text-[11px] flex flex-wrap items-center justify-between gap-1">
+                    <!-- Dynamic subject breakdown -->
+                </div>
+
+                <!-- Math & Symbol Quick-Insert Bar -->
+                <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200 flex items-center gap-1 overflow-x-auto">
+                    <span class="text-[10px] font-bold text-slate-500 shrink-0 mr-1">கணிதம்/குறியீடு:</span>
+                    <button type="button" onclick="insertSymbol('$\\frac{a}{b}$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Fraction">a/b</button>
+                    <button type="button" onclick="insertSymbol('$x^{2}$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Exponent">x²</button>
+                    <button type="button" onclick="insertSymbol('$\\sqrt{x}$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Square Root">√x</button>
+                    <button type="button" onclick="insertSymbol('$^\\circ$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Degree">°</button>
+                    <button type="button" onclick="insertSymbol('$\\angle$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Angle">∠</button>
+                    <button type="button" onclick="insertSymbol('$\\triangle$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Triangle">△</button>
+                    <button type="button" onclick="insertSymbol('$\\pi$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Pi">π</button>
+                    <button type="button" onclick="insertSymbol('$\\times$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Multiply">×</button>
+                    <button type="button" onclick="insertSymbol('$\\div$')" class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono hover:bg-indigo-50 shrink-0" title="Divide">÷</button>
+                </div>
+
+                <!-- Add / Edit Question Form -->
+                <div class="p-3 border-b border-slate-300 bg-white overflow-y-auto max-h-[63%] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h3 id="editorFormHeading" class="text-xs font-extrabold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-plus text-emerald-600"></i> புதிய வினா சேர்க்க (Add NMMS MCQ)
+                        </h3>
+                        <select id="inpSubjectTag" class="px-2 py-0.5 text-[11px] font-bold border border-indigo-200 rounded bg-indigo-50 text-indigo-900">
+                            <option value="MAT">MAT (மனத்திறன்)</option>
+                            <option value="MATHS">SAT - கணிதம் (Maths)</option>
+                            <option value="SCIENCE">SAT - அறிவியல் (Science)</option>
+                            <option value="SOCIAL">SAT - சமூக அறிவியல் (Social)</option>
+                        </select>
+                    </div>
+
+                    <input type="hidden" id="editQId" value="">
+
+                    <!-- Optional Common Direction / Passage Header for Group Questions -->
+                    <div>
+                        <input type="text" id="inpDirectionNote" onfocus="trackFocus(this)" placeholder="பொது வழிமுறை / குறிப்பு (Direction - Optional, எ.கா: வினா 1–3: விடுபட்ட எண்ணைக் காண்க)" class="w-full px-2.5 py-1 text-[11px] border border-amber-300 bg-amber-50/50 rounded-lg focus:ring-1 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Bilingual Question Textareas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">தமிழ் வினா (Tamil Question)</label>
+                            <textarea id="inpQTamil" rows="2" onfocus="trackFocus(this)" placeholder="தமிழில் வினாவை டைப் செய்யவும்..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">English Question</label>
+                            <textarea id="inpQEnglish" rows="2" onfocus="trackFocus(this)" placeholder="Type question in English..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Question Diagram Upload (For Non-Verbal Reasoning / Geometry) -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                        <label class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900 cursor-pointer">
+                            <i class="fa-solid fa-image"></i>
+                            <span>வினா படம் இணைக்க (Diagram / Mirror / Dice)</span>
+                            <input type="file" id="inpQDiagram" accept="image/*" class="hidden" onchange="handleMainDiagramUpload(event)">
+                        </label>
+                        
+                        <div id="diagramSizeControls" class="hidden flex items-center gap-1.5">
+                            <span class="text-[10px] text-slate-500">அளவு:</span>
+                            <input type="range" id="inpDiagramWidth" min="50" max="260" value="130" class="w-16 h-1.5 bg-slate-300 rounded cursor-pointer">
+                            <button type="button" onclick="clearMainDiagram()" class="text-rose-600 hover:text-rose-800 text-xs px-1" title="Remove Image">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4 Options (Text + Optional Diagram per Option for Non-Verbal MAT) -->
+                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-600">4 விருப்பங்கள் (Options - Text or Non-Verbal Diagram):</span>
+                            <select id="inpOptGridMode" class="px-1.5 py-0.5 text-[10px] border border-slate-300 rounded bg-white">
+                                <option value="2x2">2 × 2 கட்டம்</option>
+                                <option value="1x4">1 × 4 ஒரே வரி</option>
+                                <option value="4x1">4 × 1 கீழ்நோக்கி</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <!-- Option 1 -->
+                            <div class="flex items-center gap-1 bg-white border border-slate-300 rounded px-1.5 py-1">
+                                <span class="text-[11px] font-bold text-indigo-700">1)</span>
+                                <input type="text" id="inpOpt1" onfocus="trackFocus(this)" placeholder="விருப்பம் 1" class="w-full text-xs focus:outline-none">
+                                <label class="text-slate-400 hover:text-indigo-600 cursor-pointer text-xs shrink-0" title="Attach Option 1 Image">
+                                    <i id="optImgIcon1" class="fa-regular fa-image"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleOptImageUpload(event, 0)">
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div class="flex items-center gap-1 bg-white border border-slate-300 rounded px-1.5 py-1">
+                                <span class="text-[11px] font-bold text-indigo-700">2)</span>
+                                <input type="text" id="inpOpt2" onfocus="trackFocus(this)" placeholder="விருப்பம் 2" class="w-full text-xs focus:outline-none">
+                                <label class="text-slate-400 hover:text-indigo-600 cursor-pointer text-xs shrink-0" title="Attach Option 2 Image">
+                                    <i id="optImgIcon2" class="fa-regular fa-image"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleOptImageUpload(event, 1)">
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div class="flex items-center gap-1 bg-white border border-slate-300 rounded px-1.5 py-1">
+                                <span class="text-[11px] font-bold text-indigo-700">3)</span>
+                                <input type="text" id="inpOpt3" onfocus="trackFocus(this)" placeholder="விருப்பம் 3" class="w-full text-xs focus:outline-none">
+                                <label class="text-slate-400 hover:text-indigo-600 cursor-pointer text-xs shrink-0" title="Attach Option 3 Image">
+                                    <i id="optImgIcon3" class="fa-regular fa-image"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleOptImageUpload(event, 2)">
+                                </label>
+                            </div>
+                            <!-- Option 4 -->
+                            <div class="flex items-center gap-1 bg-white border border-slate-300 rounded px-1.5 py-1">
+                                <span class="text-[11px] font-bold text-indigo-700">4)</span>
+                                <input type="text" id="inpOpt4" onfocus="trackFocus(this)" placeholder="விருப்பம் 4" class="w-full text-xs focus:outline-none">
+                                <label class="text-slate-400 hover:text-indigo-600 cursor-pointer text-xs shrink-0" title="Attach Option 4 Image">
+                                    <i id="optImgIcon4" class="fa-regular fa-image"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleOptImageUpload(event, 3)">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Correct Answer & Shortcut Explanation -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <select id="inpCorrectOption" class="w-full px-2 py-1.5 text-xs font-bold text-emerald-900 bg-emerald-50 border border-emerald-300 rounded-lg">
+                                <option value="1">சரியான விடை: 1</option>
+                                <option value="2">சரியான விடை: 2</option>
+                                <option value="3">சரியான விடை: 3</option>
+                                <option value="4">சரியான விடை: 4</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="text" id="inpShortcutNote" onfocus="trackFocus(this)" placeholder="குறுக்குவழி / தீர்வு (Shortcut / Solution for Answer Key)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- Save / Cancel Buttons -->
+                    <div class="flex items-center gap-2 pt-0.5">
+                        <button type="button" id="btnSubmitQ" onclick="saveNMMSQuestion()" class="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>வினாவைச் சேர் (Add Question)</span>
+                        </button>
+                        <button type="button" id="btnCancelEdit" onclick="resetQuestionEditor()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs">
+                            ரத்து
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Added Questions List -->
+                <div class="flex-1 overflow-y-auto p-3 bg-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-700">வினாக்கள் பட்டியல் (<span id="listTotalCount">0</span>)</span>
+                        <button onclick="confirmClearQuestions()" class="text-[11px] text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> அனைத்தையும் நீக்கு
+                        </button>
+                    </div>
+                    <div id="sidebarQuestionList" class="space-y-1.5">
+                        <!-- Rendered Question Items -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: Live A4 Print Preview (Question Paper + OMR + Answer Key) -->
+        <main class="print-area-wrapper flex-1 bg-slate-400/70 overflow-y-auto p-4 md:p-6 flex flex-col items-center">
+            
+            <!-- PAGE 1+: QUESTION PAPER SHEET -->
+            <div id="sheetQuestionPaper" class="a4-page tamil-font" style="font-size: 10.5pt; line-height: 1.45;">
+                <div id="watermarkDiv" class="watermark-overlay hidden"></div>
+                <div id="qpBorderFrame" class="frame-double relative z-10 flex flex-col justify-between">
+                    
+                    <div>
+                        <!-- Official NMMS Style Header -->
+                        <div class="border-b-2 border-slate-900 pb-2 mb-2.5">
+                            <div class="flex justify-between items-center text-[9pt] font-bold text-slate-700 mb-1">
+                                <span>வகுப்பு / Class: <span id="outClass" class="text-slate-950">VIII (8-ஆம் வகுப்பு)</span></span>
+                                <span class="bg-slate-900 text-white px-2.5 py-0.5 rounded text-[8.5pt] tracking-wider uppercase">NMMS EXAMINATION</span>
+                                <span>தேதி / Date: <span id="outDate" class="text-slate-950">17.11.2026</span></span>
+                            </div>
+
+                            <div class="text-center">
+                                <h1 id="outSchool" class="text-[13pt] font-extrabold uppercase tracking-wide text-slate-950">
+                                    அரசு மேல்நிலைப்பள்ளி / NMMS பயிற்சி மையம்
+                                </h1>
+                                <h2 id="outExamName" class="text-[11pt] font-bold text-slate-800 mt-0.5">
+                                    NMMS மாதிரித் தேர்வு / NMMS MOCK TEST - 2026
+                                </h2>
+                                <div class="inline-block mt-1 px-3 py-0.5 bg-slate-100 border border-slate-400 rounded text-[9.5pt] font-bold text-slate-900">
+                                    <span id="outPaperSubject">MAT & SAT (மனத்திறன் & படிப்பறிவுத் தேர்வு)</span>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center text-[9.5pt] font-bold text-slate-900 mt-2 pt-1.5 border-t border-slate-400">
+                                <span>வினாக்கள் / Questions: <span id="outQRange">1 – 10</span></span>
+                                <span>நேரம் / Time: <span id="outTime">90 நிமிடங்கள்</span></span>
+                                <span>மொத்த மதிப்பெண் / Max. Marks: <span id="outMarks">90</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Student Details Box (Toggleable) -->
+                        <div id="outStudentBox" class="grid grid-cols-12 gap-2 border border-slate-600 rounded px-2.5 py-1.5 mb-2.5 text-[9pt] bg-slate-50/70">
+                            <div class="col-span-6 font-semibold">மாணவர் பெயர் / Name: ........................................</div>
+                            <div class="col-span-6 font-semibold text-right">பதிவு எண் / Reg. No: <span class="tracking-widest font-mono">□□□□□□□□</span></div>
+                        </div>
+
+                        <!-- Exam Instructions -->
+                        <div id="outInstructionsBar" class="text-[8.8pt] italic text-slate-800 mb-2.5 pb-1.5 border-b border-dashed border-slate-400">
+                            <strong>குறிப்பு / Note:</strong> <span id="outInstructions"></span>
+                        </div>
+
+                        <!-- Questions Container -->
+                        <div id="outQuestionsBody" class="booklet-two-col">
+                            <!-- Questions Rendered Here -->
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-6 pt-1.5 border-t border-slate-400 flex justify-between items-center text-[8.5pt] font-bold text-slate-700">
+                        <span>NMMS Practice Series</span>
+                        <span>*** வாழ்த்துக்கள் / ALL THE BEST ***</span>
+                        <span>P.T.O.</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SEPARATE PAGE: PRINTABLE NMMS OMR RESPONSE SHEET -->
+            <div id="sheetOMR" class="a4-page tamil-font">
+                <div class="frame-single flex flex-col justify-between">
+                    <div>
+                        <!-- OMR Header -->
+                        <div class="border-2 border-rose-800 rounded-lg p-2.5 mb-3 bg-rose-50/30">
+                            <div class="flex justify-between items-center border-b border-rose-300 pb-1.5 mb-2">
+                                <div>
+                                    <h2 class="text-sm font-extrabold text-rose-900 uppercase">NMMS OMR விடைத்தாள் (OMR RESPONSE SHEET)</h2>
+                                    <p id="omrSubHeader" class="text-[10px] font-semibold text-slate-700"></p>
+                                </div>
+                                <div class="text-right text-[9.5px] font-bold text-rose-900 border border-rose-700 px-2 py-1 rounded bg-white">
+                                    பயன்படுத்த வேண்டிய பேனா:<br>நீலம் / கருப்பு பந்துமுனைப் பேனா
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-800">
+                                <div class="col-span-6 border border-slate-400 p-1.5 rounded bg-white">
+                                    மாணவர் பெயர் (NAME): ___________________________
+                                </div>
+                                <div class="col-span-6 border border-slate-400 p-1.5 rounded bg-white">
+                                    பள்ளி (SCHOOL): ________________________________
+                                </div>
+                                <div class="col-span-5 border border-slate-400 p-1.5 rounded bg-white">
+                                    பதிவு எண் (REG. NO): [ ][ ][ ][ ][ ][ ][ ][ ]
+                                </div>
+                                <div class="col-span-4 border border-slate-400 p-1.5 rounded bg-white">
+                                    தேதி (DATE): _______________
+                                </div>
+                                <div class="col-span-3 border border-slate-400 p-1.5 rounded bg-white text-center">
+                                    மதிப்பெண்: _____ / <span id="omrTotalMarks">90</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 flex items-center justify-between text-[9px] text-slate-700 bg-white px-2 py-1 rounded border border-rose-200">
+                                <span><strong>சரியான முறை (Correct):</strong> வட்டத்தை முழுமையாக நிரப்பவும் <span class="inline-block w-3 h-3 rounded-full bg-slate-900 align-middle"></span></span>
+                                <span><strong>தவறான முறை (Wrong):</strong> <span class="omr-bubble">✓</span> <span class="omr-bubble">✗</span> <span class="omr-bubble">◐</span></span>
+                            </div>
+                        </div>
+
+                        <!-- OMR Bubbles Grid (Arranged in columns of 30 questions each, up to 180) -->
+                        <div id="omrBubblesContainer" class="grid grid-cols-3 gap-3">
+                            <!-- Dynamic OMR Columns Generated Here -->
+                        </div>
+                    </div>
+
+                    <!-- Signatures Footer -->
+                    <div class="mt-6 pt-3 border-t border-slate-400 grid grid-cols-2 gap-8 text-[10px] font-bold text-slate-800">
+                        <div>மாணவர் கையொப்பம் (Signature of Candidate): ___________________</div>
+                        <div class="text-right">கண்காணிப்பாளர் கையொப்பம் (Invigilator Sign): ___________________</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEPARATE PAGE: ANSWER KEY & SHORTCUT SOLUTIONS -->
+            <div id="sheetAnswerKey" class="a4-page tamil-font">
+                <div class="frame-double flex flex-col justify-between">
+                    <div>
+                        <div class="text-center border-b-2 border-slate-900 pb-2 mb-3">
+                            <h2 class="text-base font-extrabold uppercase tracking-wider text-slate-950">
+                                NMMS விடைக்குறிப்பு மற்றும் குறுக்குவழித் தீர்வுகள்
+                            </h2>
+                            <p class="text-xs font-bold text-slate-700">(ANSWER KEY & STEP-BY-STEP SHORTCUTS)</p>
+                            <p id="ansKeySubTitle" class="text-[10px] text-slate-600 mt-0.5"></p>
+                        </div>
+
+                        <!-- Compact Answer Key Grid -->
+                        <div id="ansKeyGrid" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 text-xs mb-4">
+                            <!-- Q.No & Answer Boxes -->
+                        </div>
+
+                        <!-- Detailed Step-by-Step Solutions -->
+                        <div id="ansKeySolutionsList" class="space-y-2 text-[10pt] border-t-2 border-slate-300 pt-3">
+                            <!-- Explanations Rendered Here -->
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-2 border-t border-slate-400 text-center text-[9pt] font-bold text-slate-600">
+                        NMMS Answer Key & Solutions — Generated for Academic Practice
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkImportModal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-teal-700 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>மொத்தமாக வினாக்களைச் சேர்க்க (Bulk Paste Parser)</span>
+                </h3>
+                <button onclick="closeBulkModal()" class="text-teal-100 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto space-y-3 text-xs">
+                <div class="bg-teal-50 border border-teal-200 rounded-xl p-3 text-teal-950 space-y-1">
+                    <p class="font-bold">கீழ்க்கண்ட வடிவத்தில் (Format) பல வினாக்களை ஒரே நேரத்தில் பேஸ்ட் செய்யலாம்:</p>
+                    <pre class="bg-white p-2 rounded border border-teal-200 text-[11px] overflow-x-auto font-mono text-slate-700">Sub: MAT
+Ta: எண் தொடரை நிரப்புக: 3, 8, 15, 24, ?
+En: Complete the series: 3, 8, 15, 24, ?
+1) 33
+2) 35
+3) 36
+4) 38
+Ans: 2
+Sol: வித்தியாசம் +5, +7, +9, +11. எனவே 24 + 11 = 35.</pre>
+                </div>
+
+                <textarea id="bulkPasteInput" rows="10" placeholder="உங்கள் வினாக்களை இங்கே பேஸ்ட் செய்யவும்..." class="w-full p-3 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500"></textarea>
+            </div>
+
+            <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+                <button onclick="closeBulkModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">ரத்து</button>
+                <button onclick="executeBulkImport()" class="px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow">வினாக்களை இணைக்கவும்</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Dialog -->
+    <div id="confirmModal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 text-center space-y-4">
+            <div class="w-11 h-11 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-slate-800 text-sm">உறுதிப்படுத்தவும் (Confirm)</h4>
+                <p id="confirmText" class="text-xs text-slate-600 mt-1">அனைத்து வினாக்களையும் நீக்க விரும்புகிறீர்களா?</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">இல்லை</button>
+                <button id="confirmActionBtn" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-xs">ஆம், நீக்கு</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Core Application State
+        let nmmsQuestions = [];
+        let tempMainDiagram = "";
+        let tempOptionDiagrams = ["", "", "", ""];
+        let focusedField = null;
+
+        const optionLabelsMap = {
+            num: ['(1)', '(2)', '(3)', '(4)'],
+            alpha: ['(A)', '(B)', '(C)', '(D)'],
+            tamil: ['(அ)', '(ஆ)', '(இ)', '(ஈ)']
+        };
+
+        const subjectBadgeNames = {
+            MAT: { label: 'MAT', color: 'bg-purple-100 text-purple-800' },
+            MATHS: { label: 'கணிதம்', color: 'bg-blue-100 text-blue-800' },
+            SCIENCE: { label: 'அறிவியல்', color: 'bg-emerald-100 text-emerald-800' },
+            SOCIAL: { label: 'சமூக அறிவியல்', color: 'bg-amber-100 text-amber-800' }
+        };
+
+        // Initialize on Window Load
+        window.onload = function() {
+            const cached = localStorage.getItem('nmms_complete_suite_v1');
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    restoreProjectState(data);
+                } catch (e) {
+                    loadNMMSSampleData();
+                }
+            } else {
+                loadNMMSSampleData();
+            }
+        };
+
+        // Track focused input for Math/Symbol insertion
+        function trackFocus(el) {
+            focusedField = el;
+        }
+
+        function insertSymbol(sym) {
+            const target = focusedField || document.getElementById('inpQTamil');
+            if (!target) return;
+            const start = target.selectionStart || 0;
+            const end = target.selectionEnd || 0;
+            const val = target.value;
+            target.value = val.slice(0, start) + sym + val.slice(end);
+            target.focus();
+            target.selectionStart = target.selectionEnd = start + sym.length;
+        }
+
+        // Sidebar Tab Switcher
+        function switchSidebarTab(tab) {
+            const btnSetup = document.getElementById('tabBtnSetup');
+            const btnQ = document.getElementById('tabBtnQuestions');
+            const panelSetup = document.getElementById('panelSetup');
+            const panelQ = document.getElementById('panelQuestions');
+
+            if (tab === 'setup') {
+                btnSetup.className = "flex-1 py-3 px-2 text-indigo-800 border-b-2 border-indigo-700 bg-white flex items-center justify-center gap-1.5";
+                btnQ.className = "flex-1 py-3 px-2 text-slate-600 hover:text-indigo-800 flex items-center justify-center gap-1.5";
+                panelSetup.classList.remove('hidden');
+                panelQ.classList.add('hidden');
+            } else {
+                btnQ.className = "flex-1 py-3 px-2 text-indigo-800 border-b-2 border-indigo-700 bg-white flex items-center justify-center gap-1.5";
+                btnSetup.className = "flex-1 py-3 px-2 text-slate-600 hover:text-indigo-800 flex items-center justify-center gap-1.5";
+                panelQ.classList.remove('hidden');
+                panelSetup.classList.add('hidden');
+            }
+        }
+
+        // Quick Presets for MAT / SAT / FULL NMMS
+        function applyPaperPreset(mode) {
+            if (mode === 'MAT') {
+                document.getElementById('inpPaperSubject').value = "பகுதி - I: மனத்திறன் தேர்வு / PART - I: MENTAL ABILITY TEST (MAT)";
+                document.getElementById('inpTime').value = "90 நிமிடங்கள்";
+                document.getElementById('inpMarks').value = "90";
+                document.getElementById('inpStartQNum').value = 1;
+                showToast("MAT (மனத்திறன் தேர்வு: 1–90) அமைப்பு தேர்ந்தெடுக்கப்பட்டது!");
+            } else if (mode === 'SAT') {
+                document.getElementById('inpPaperSubject').value = "பகுதி - II: படிப்பறிவுத் தேர்வு / PART - II: SCHOLASTIC APTITUDE TEST (SAT)";
+                document.getElementById('inpTime').value = "90 நிமிடங்கள்";
+                document.getElementById('inpMarks').value = "90";
+                document.getElementById('inpStartQNum').value = 91;
+                showToast("SAT (படிப்பறிவுத் தேர்வு: 91–180) அமைப்பு தேர்ந்தெடுக்கப்பட்டது!");
+            } else {
+                document.getElementById('inpPaperSubject').value = "முழு மாதிரித் தேர்வு / FULL MOCK TEST (MAT & SAT)";
+                document.getElementById('inpTime').value = "180 நிமிடங்கள்";
+                document.getElementById('inpMarks').value = "180";
+                document.getElementById('inpStartQNum').value = 1;
+                showToast("முழு NMMS தேர்வு (1–180) அமைப்பு தேர்ந்தெடுக்கப்பட்டது!");
+            }
+            renderAllPreviews();
+        }
+
+        // Diagram Image Upload Handlers
+        function handleMainDiagramUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempMainDiagram = e.target.result;
+                document.getElementById('diagramSizeControls').classList.remove('hidden');
+                showToast("வினா படம் இணைக்கப்பட்டது!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearMainDiagram() {
+            tempMainDiagram = "";
+            document.getElementById('inpQDiagram').value = "";
+            document.getElementById('diagramSizeControls').classList.add('hidden');
+        }
+
+        function handleOptImageUpload(event, idx) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempOptionDiagrams[idx] = e.target.result;
+                const icon = document.getElementById(`optImgIcon${idx + 1}`);
+                if (icon) icon.className = "fa-solid fa-image text-emerald-600";
+                showToast(`விருப்பம் ${idx + 1} படம் இணைக்கப்பட்டது!`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Save / Update NMMS Question
+        function saveNMMSQuestion() {
+            const subject = document.getElementById('inpSubjectTag').value;
+            const direction = document.getElementById('inpDirectionNote').value.trim();
+            const qTamil = document.getElementById('inpQTamil').value.trim();
+            const qEnglish = document.getElementById('inpQEnglish').value.trim();
+            const opt1 = document.getElementById('inpOpt1').value.trim();
+            const opt2 = document.getElementById('inpOpt2').value.trim();
+            const opt3 = document.getElementById('inpOpt3').value.trim();
+            const opt4 = document.getElementById('inpOpt4').value.trim();
+            const optGrid = document.getElementById('inpOptGridMode').value;
+            const correct = document.getElementById('inpCorrectOption').value;
+            const shortcut = document.getElementById('inpShortcutNote').value.trim();
+            const diagramWidth = document.getElementById('inpDiagramWidth').value;
+            const editId = document.getElementById('editQId').value;
+
+            if (!qTamil && !qEnglish && !tempMainDiagram) {
+                showToast("தமிழ் அல்லது ஆங்கில வினாவை உள்ளிடவும்!", "error");
+                return;
+            }
+
+            const hasTextOpts = opt1 && opt2 && opt3 && opt4;
+            const hasImgOpts = tempOptionDiagrams.some(img => img !== "");
+            if (!hasTextOpts && !hasImgOpts) {
+                showToast("4 விருப்பங்களையும் (Options) நிரப்பவும்!", "error");
+                return;
+            }
+
+            const qObj = {
+                id: editId ? Number(editId) : Date.now(),
+                subject,
+                direction,
+                qTamil,
+                qEnglish,
+                diagram: tempMainDiagram,
+                diagramWidth,
+                options: [opt1, opt2, opt3, opt4],
+                optionImages: [...tempOptionDiagrams],
+                optGrid,
+                correct,
+                shortcut
+            };
+
+            if (editId) {
+                const index = nmmsQuestions.findIndex(item => item.id === Number(editId));
+                if (index !== -1) nmmsQuestions[index] = qObj;
+                showToast("வினா புதுப்பிக்கப்பட்டது!");
+            } else {
+                nmmsQuestions.push(qObj);
+                showToast("புதிய NMMS வினா சேர்க்கப்பட்டது!");
+            }
+
+            resetQuestionEditor();
+            refreshQuestionList();
+            renderAllPreviews();
+        }
+
+        function editNMMSQuestion(id) {
+            const q = nmmsQuestions.find(item => item.id === id);
+            if (!q) return;
+
+            switchSidebarTab('questions');
+            document.getElementById('editQId').value = q.id;
+            document.getElementById('inpSubjectTag').value = q.subject || 'MAT';
+            document.getElementById('inpDirectionNote').value = q.direction || '';
+            document.getElementById('inpQTamil').value = q.qTamil || '';
+            document.getElementById('inpQEnglish').value = q.qEnglish || '';
+            document.getElementById('inpOpt1').value = q.options[0] || '';
+            document.getElementById('inpOpt2').value = q.options[1] || '';
+            document.getElementById('inpOpt3').value = q.options[2] || '';
+            document.getElementById('inpOpt4').value = q.options[3] || '';
+            document.getElementById('inpOptGridMode').value = q.optGrid || '2x2';
+            document.getElementById('inpCorrectOption').value = q.correct || '1';
+            document.getElementById('inpShortcutNote').value = q.shortcut || '';
+
+            if (q.diagram) {
+                tempMainDiagram = q.diagram;
+                document.getElementById('inpDiagramWidth').value = q.diagramWidth || 130;
+                document.getElementById('diagramSizeControls').classList.remove('hidden');
+            } else {
+                clearMainDiagram();
+            }
+
+            tempOptionDiagrams = q.optionImages ? [...q.optionImages] : ["", "", "", ""];
+            for (let i = 0; i < 4; i++) {
+                const icon = document.getElementById(`optImgIcon${i + 1}`);
+                if (icon) {
+                    icon.className = tempOptionDiagrams[i]
+                        ? "fa-solid fa-image text-emerald-600"
+                        : "fa-regular fa-image";
+                }
+            }
+
+            document.getElementById('editorFormHeading').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-600"></i> வினாவைத் திருத்துக (Edit Question)`;
+            const btn = document.getElementById('btnSubmitQ');
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>மாற்றங்களைச் சேமி (Update)</span>`;
+            btn.classList.replace('bg-indigo-700', 'bg-amber-600');
+            btn.classList.replace('hover:bg-indigo-800', 'hover:bg-amber-700');
+            document.getElementById('btnCancelEdit').classList.remove('hidden');
+        }
+
+        function resetQuestionEditor() {
+            document.getElementById('editQId').value = "";
+            document.getElementById('inpDirectionNote').value = "";
+            document.getElementById('inpQTamil').value = "";
+            document.getElementById('inpQEnglish').value = "";
+            document.getElementById('inpOpt1').value = "";
+            document.getElementById('inpOpt2').value = "";
+            document.getElementById('inpOpt3').value = "";
+            document.getElementById('inpOpt4').value = "";
+            document.getElementById('inpShortcutNote').value = "";
+            clearMainDiagram();
+
+            tempOptionDiagrams = ["", "", "", ""];
+            for (let i = 1; i <= 4; i++) {
+                const icon = document.getElementById(`optImgIcon${i}`);
+                if (icon) icon.className = "fa-regular fa-image";
+            }
+
+            document.getElementById('editorFormHeading').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-600"></i> புதிய வினா சேர்க்க (Add NMMS MCQ)`;
+            const btn = document.getElementById('btnSubmitQ');
+            btn.innerHTML = `<i class="fa-solid fa-plus"></i> <span>வினாவைச் சேர் (Add Question)</span>`;
+            btn.classList.replace('bg-amber-600', 'bg-indigo-700');
+            btn.classList.replace('hover:bg-amber-700', 'hover:bg-indigo-800');
+            document.getElementById('btnCancelEdit').classList.add('hidden');
+        }
+
+        function deleteNMMSQuestion(id) {
+            nmmsQuestions = nmmsQuestions.filter(q => q.id !== id);
+            refreshQuestionList();
+            renderAllPreviews();
+            showToast("வினா நீக்கப்பட்டது.");
+        }
+
+        function moveNMMSQuestion(idx, dir) {
+            const target = idx + dir;
+            if (target < 0 || target >= nmmsQuestions.length) return;
+            const tmp = nmmsQuestions[idx];
+            nmmsQuestions[idx] = nmmsQuestions[target];
+            nmmsQuestions[target] = tmp;
+            refreshQuestionList();
+            renderAllPreviews();
+        }
+
+        // Refresh Sidebar Question List & Subject Counts
+        function refreshQuestionList() {
+            const startNum = parseInt(document.getElementById('inpStartQNum').value) || 1;
+            document.getElementById('badgeTotalQ').innerText = nmmsQuestions.length;
+            document.getElementById('listTotalCount').innerText = nmmsQuestions.length;
+
+            // Subject counts summary
+            const counts = { MAT: 0, MATHS: 0, SCIENCE: 0, SOCIAL: 0 };
+            nmmsQuestions.forEach(q => {
+                if (counts[q.subject] !== undefined) counts[q.subject]++;
+            });
+            document.getElementById('topicSummaryBar').innerHTML = `
+                <span>MAT: <strong>${counts.MAT}</strong></span>
+                <span>கணிதம்: <strong>${counts.MATHS}</strong></span>
+                <span>அறிவியல்: <strong>${counts.SCIENCE}</strong></span>
+                <span>சமூக அறிவியல்: <strong>${counts.SOCIAL}</strong></span>
+            `;
+
+            const listEl = document.getElementById('sidebarQuestionList');
+            if (nmmsQuestions.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">இதுவரை வினாக்கள் சேர்க்கப்படவில்லை.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = nmmsQuestions.map((q, idx) => {
+                const badge = subjectBadgeNames[q.subject] || subjectBadgeNames.MAT;
+                const titlePreview = q.qTamil || q.qEnglish || '[Diagram Question]';
+                return `
+                    <div class="p-2 bg-white hover:bg-indigo-50/40 border border-slate-200 rounded-lg flex items-center justify-between gap-2 shadow-xs">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-extrabold bg-slate-800 text-white px-1.5 py-0.2 rounded">Q${startNum + idx}</span>
+                                <span class="text-[10px] font-bold px-1.5 rounded ${badge.color}">${badge.label}</span>
+                                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 rounded">Ans: ${q.correct}</span>
+                                ${q.diagram ? '<i class="fa-solid fa-image text-[10px] text-indigo-600"></i>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-800 truncate mt-0.5 font-medium">${escapeHTML(titlePreview)}</p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="moveNMMSQuestion(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-indigo-700 disabled:opacity-30 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button onclick="moveNMMSQuestion(${idx}, 1)" ${idx === nmmsQuestions.length - 1 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-indigo-700 disabled:opacity-30 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+                            <button onclick="editNMMSQuestion(${q.id})" class="p-1 text-amber-600 hover:text-amber-800 text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteNMMSQuestion(${q.id})" class="p-1 text-rose-500 hover:text-rose-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render Question Paper, OMR Sheet & Answer Key
+        function renderAllPreviews() {
+            const startNum = parseInt(document.getElementById('inpStartQNum').value) || 1;
+            const endNum = nmmsQuestions.length > 0 ? startNum + nmmsQuestions.length - 1 : startNum;
+
+            // 1. Header Metadata
+            document.getElementById('outSchool').innerText = document.getElementById('inpSchool').value;
+            document.getElementById('outExamName').innerText = document.getElementById('inpExamName').value;
+            document.getElementById('outPaperSubject').innerText = document.getElementById('inpPaperSubject').value;
+            document.getElementById('outClass').innerText = document.getElementById('inpClass').value;
+            document.getElementById('outTime').innerText = document.getElementById('inpTime').value;
+            document.getElementById('outMarks').innerText = document.getElementById('inpMarks').value;
+            document.getElementById('outDate').innerText = document.getElementById('inpDate').value;
+            document.getElementById('outQRange').innerText = `${startNum} – ${endNum}`;
+
+            const inst = document.getElementById('inpInstructions').value.trim();
+            document.getElementById('outInstructionsBar').style.display = inst ? 'block' : 'none';
+            document.getElementById('outInstructions').innerText = inst;
+
+            // Watermark
+            const wmText = document.getElementById('inpWatermark').value.trim();
+            const wmDiv = document.getElementById('watermarkDiv');
+            if (wmText) {
+                wmDiv.innerText = wmText;
+                wmDiv.classList.remove('hidden');
+            } else {
+                wmDiv.classList.add('hidden');
+            }
+
+            // Font & Border
+            const qpSheet = document.getElementById('sheetQuestionPaper');
+            qpSheet.style.fontSize = document.getElementById('selFontSize').value;
+            document.getElementById('qpBorderFrame').className = `${document.getElementById('selBorderStyle').value} relative z-10 flex flex-col justify-between`;
+            document.getElementById('outStudentBox').style.display = document.getElementById('chkStudentHeader').checked ? 'grid' : 'none';
+
+            // 2. Render Question Paper Body
+            const layoutMode = document.getElementById('selPageLayout').value;
+            const langFilter = document.getElementById('selLangFilter').value;
+            const optStyle = document.getElementById('selOptStyle').value;
+            const labels = optionLabelsMap[optStyle];
+
+            const qBody = document.getElementById('outQuestionsBody');
+            qBody.className = layoutMode === 'compact_2col' ? 'booklet-two-col' : 'space-y-3';
+
+            if (nmmsQuestions.length === 0) {
+                qBody.innerHTML = `<div class="text-center text-slate-400 py-12 italic">இடதுபுறம் உள்ள படிவத்தில் NMMS வினாக்களைச் சேர்க்கவும்...</div>`;
+            } else {
+                qBody.innerHTML = nmmsQuestions.map((q, idx) => {
+                    const qNum = startNum + idx;
+
+                    // Optional Direction Note
+                    const directionHTML = q.direction
+                        ? `<div class="bg-slate-100 border-l-4 border-slate-800 px-2 py-1 mb-1.5 text-[9pt] font-bold text-slate-900">${nl2br(q.direction)}</div>`
+                        : '';
+
+                    // Question Text based on Language Filter & Layout
+                    let qTextHTML = '';
+                    if (langFilter === 'tamil') {
+                        qTextHTML = `<div>${nl2br(q.qTamil || q.qEnglish)}</div>`;
+                    } else if (langFilter === 'english') {
+                        qTextHTML = `<div>${nl2br(q.qEnglish || q.qTamil)}</div>`;
+                    } else {
+                        // Bilingual Both
+                        if (layoutMode === 'bilingual_split' && q.qTamil && q.qEnglish) {
+                            qTextHTML = `
+                                <div class="grid grid-cols-2 gap-3 items-start">
+                                    <div class="pr-2 border-r border-slate-300">${nl2br(q.qTamil)}</div>
+                                    <div>${nl2br(q.qEnglish)}</div>
+                                </div>`;
+                        } else {
+                            qTextHTML = `
+                                ${q.qTamil ? `<div>${nl2br(q.qTamil)}</div>` : ''}
+                                ${q.qEnglish ? `<div class="${q.qTamil ? 'mt-0.5 text-slate-800' : ''}">${nl2br(q.qEnglish)}</div>` : ''}
+                            `;
+                        }
+                    }
+
+                    // Question Diagram
+                    const diagramHTML = q.diagram
+                        ? `<div class="my-1.5"><img src="${q.diagram}" style="width: ${q.diagramWidth || 130}px;" class="max-w-full h-auto border border-slate-200 rounded p-0.5 bg-white"></div>`
+                        : '';
+
+                    // Options Grid
+                    let optGridClass = 'grid-cols-2 gap-x-3 gap-y-1';
+                    if (q.optGrid === '1x4') optGridClass = 'grid-cols-4 gap-x-2';
+                    if (q.optGrid === '4x1') optGridClass = 'grid-cols-1 gap-y-1';
+
+                    const optionsHTML = [0, 1, 2, 3].map(i => {
+                        const optImg = (q.optionImages && q.optionImages[i])
+                            ? `<img src="${q.optionImages[i]}" class="h-10 w-auto inline-block ml-1 border border-slate-200 rounded">`
+                            : '';
+                        return `
+                            <div class="flex items-start gap-1">
+                                <span class="font-bold shrink-0">${labels[i]}</span>
+                                <span>${q.options[i] || ''}${optImg}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="q-card-print mb-2.5">
+                            ${directionHTML}
+                            <div class="flex items-start gap-1.5">
+                                <span class="font-extrabold shrink-0">${qNum}.</span>
+                                <div class="flex-1">
+                                    <div class="font-medium text-slate-950">${qTextHTML}</div>
+                                    ${diagramHTML}
+                                    <div class="grid ${optGridClass} mt-1 pl-0.5 text-slate-900">
+                                        ${optionsHTML}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 3. Render OMR Response Sheet
+            const showOMR = document.getElementById('chkIncludeOMR').checked;
+            const sheetOMR = document.getElementById('sheetOMR');
+            if (!showOMR || nmmsQuestions.length === 0) {
+                sheetOMR.classList.add('hidden');
+            } else {
+                sheetOMR.classList.remove('hidden');
+                document.getElementById('omrSubHeader').innerText = `${document.getElementById('inpSchool').value} | ${document.getElementById('inpExamName').value}`;
+                document.getElementById('omrTotalMarks').innerText = nmmsQuestions.length;
+
+                // Build OMR columns (30 rows per column, minimum 30 bubbles or exact question count)
+                const totalOMRSlots = Math.max(nmmsQuestions.length, 30);
+                const perCol = Math.ceil(totalOMRSlots / 3);
+                let omrColsHTML = '';
+
+                for (let col = 0; col < 3; col++) {
+                    const colStart = col * perCol;
+                    const colEnd = Math.min(colStart + perCol, totalOMRSlots);
+                    if (colStart >= totalOMRSlots) break;
+
+                    let rowsHTML = '';
+                    for (let r = colStart; r < colEnd; r++) {
+                        const displayQNo = startNum + r;
+                        const rowBg = r % 2 === 1 ? 'bg-rose-50/40' : 'bg-white';
+                        rowsHTML += `
+                            <div class="flex items-center justify-between px-2 py-1 border-b border-rose-200 ${rowBg}">
+                                <span class="text-[10px] font-extrabold text-slate-800 w-7">${displayQNo}.</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="omr-bubble">1</span>
+                                    <span class="omr-bubble">2</span>
+                                    <span class="omr-bubble">3</span>
+                                    <span class="omr-bubble">4</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    omrColsHTML += `
+                        <div class="border border-rose-700 rounded overflow-hidden">
+                            <div class="bg-rose-800 text-white text-[9.5px] font-bold px-2 py-1 flex justify-between">
+                                <span>Q.No</span>
+                                <span class="tracking-widest pr-1">OPTIONS</span>
+                            </div>
+                            ${rowsHTML}
+                        </div>
+                    `;
+                }
+                document.getElementById('omrBubblesContainer').innerHTML = omrColsHTML;
+            }
+
+            // 4. Render Answer Key & Shortcut Solutions Sheet
+            const showAnsKey = document.getElementById('chkIncludeAnsKey').checked;
+            const sheetAnsKey = document.getElementById('sheetAnswerKey');
+            if (!showAnsKey || nmmsQuestions.length === 0) {
+                sheetAnsKey.classList.add('hidden');
+            } else {
+                sheetAnsKey.classList.remove('hidden');
+                document.getElementById('ansKeySubTitle').innerText = `${document.getElementById('inpExamName').value} — ${document.getElementById('inpPaperSubject').value}`;
+
+                // Compact Answer Grid
+                document.getElementById('ansKeyGrid').innerHTML = nmmsQuestions.map((q, idx) => {
+                    const qNum = startNum + idx;
+                    const ansIdx = Number(q.correct) - 1;
+                    const ansBadge = labels[ansIdx] || `(${q.correct})`;
+                    return `
+                        <div class="border border-slate-500 rounded text-center py-1 bg-slate-50">
+                            <div class="text-[9.5px] font-bold text-slate-600 border-b border-slate-300">${qNum}</div>
+                            <div class="text-xs font-extrabold text-slate-950 mt-0.5">${ansBadge}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Detailed Shortcut Explanations
+                const withShortcuts = nmmsQuestions
+                    .map((q, idx) => ({ ...q, qNum: startNum + idx }))
+                    .filter(q => q.shortcut && q.shortcut.trim() !== '');
+
+                const solList = document.getElementById('ansKeySolutionsList');
+                if (withShortcuts.length > 0) {
+                    solList.classList.remove('hidden');
+                    solList.innerHTML = `<h3 class="font-extrabold text-slate-900 underline mb-1.5">விளக்கமான தீர்வுகள் & குறுக்குவழிகள் (Step-by-Step Shortcuts):</h3>` +
+                        withShortcuts.map(q => {
+                            const ansIdx = Number(q.correct) - 1;
+                            return `
+                                <div class="q-card-print text-[9.5pt]">
+                                    <span class="font-extrabold text-indigo-950">${q.qNum}. விடை: ${labels[ansIdx]} ${q.options[ansIdx] || ''}</span>
+                                    <span class="text-slate-800"> — ${nl2br(q.shortcut)}</span>
+                                </div>
+                            `;
+                        }).join('');
+                } else {
+                    solList.classList.add('hidden');
+                }
+            }
+
+            // Trigger MathJax 3 Typesetting across all pages
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch(err => console.warn('MathJax error:', err));
+            }
+
+            saveDraftToLocalStorage();
+        }
+
+        // Bulk Import Parser
+        function openBulkModal() {
+            document.getElementById('bulkImportModal').classList.remove('hidden');
+        }
+        function closeBulkModal() {
+            document.getElementById('bulkImportModal').classList.add('hidden');
+        }
+
+        function executeBulkImport() {
+            const raw = document.getElementById('bulkPasteInput').value.trim();
+            if (!raw) {
+                showToast("வினாக்களை பேஸ்ட் செய்யவும்!", "error");
+                return;
+            }
+
+            const blocks = raw.split(/\n(?=Sub:|Ta:|Q:|Q\d+[\.\):])/i);
+            let count = 0;
+
+            blocks.forEach(block => {
+                const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+                if (lines.length < 4) return;
+
+                let sub = 'MAT';
+                let ta = '';
+                let en = '';
+                let opts = ['', '', '', ''];
+                let ans = '1';
+                let sol = '';
+
+                lines.forEach(line => {
+                    if (/^Sub:/i.test(line)) {
+                        const val = line.replace(/^Sub:\s*/i, '').trim().toUpperCase();
+                        if (['MAT', 'MATHS', 'SCIENCE', 'SOCIAL'].includes(val)) sub = val;
+                    } else if (/^Ta:/i.test(line)) {
+                        ta = line.replace(/^Ta:\s*/i, '').trim();
+                    } else if (/^En:/i.test(line)) {
+                        en = line.replace(/^En:\s*/i, '').trim();
+                    } else if (/^(Q:|Q\d+[\.\):])/i.test(line)) {
+                        ta = line.replace(/^(Q:|Q\d+[\.\):])\s*/i, '').trim();
+                    } else if (/^(\(1\)|1\)|1\.|\(A\)|A\)|\(அ\)|அ\))/i.test(line)) {
+                        opts[0] = line.replace(/^(\(1\)|1\)|1\.|\(A\)|A\)|\(அ\)|அ\))\s*/i, '');
+                    } else if (/^(\(2\)|2\)|2\.|\(B\)|B\)|\(ஆ\)|ஆ\))/i.test(line)) {
+                        opts[1] = line.replace(/^(\(2\)|2\)|2\.|\(B\)|B\)|\(ஆ\)|ஆ\))\s*/i, '');
+                    } else if (/^(\(3\)|3\)|3\.|\(C\)|C\)|\(இ\)|இ\))/i.test(line)) {
+                        opts[2] = line.replace(/^(\(3\)|3\)|3\.|\(C\)|C\)|\(இ\)|இ\))\s*/i, '');
+                    } else if (/^(\(4\)|4\)|4\.|\(D\)|D\)|\(ஈ\)|ஈ\))/i.test(line)) {
+                        opts[3] = line.replace(/^(\(4\)|4\)|4\.|\(D\)|D\)|\(ஈ\)|ஈ\))\s*/i, '');
+                    } else if (/^(Ans:|Answer:)/i.test(line)) {
+                        const v = line.replace(/^(Ans:|Answer:)\s*/i, '').trim().toUpperCase();
+                        if (v === '2' || v === 'B' || v === 'ஆ') ans = '2';
+                        else if (v === '3' || v === 'C' || v === 'இ') ans = '3';
+                        else if (v === '4' || v === 'D' || v === 'ஈ') ans = '4';
+                        else ans = '1';
+                    } else if (/^(Sol:|Exp:)/i.test(line)) {
+                        sol = line.replace(/^(Sol:|Exp:)\s*/i, '').trim();
+                    }
+                });
+
+                if ((ta || en) && opts[0] && opts[1]) {
+                    nmmsQuestions.push({
+                        id: Date.now() + Math.random(),
+                        subject: sub,
+                        direction: '',
+                        qTamil: ta,
+                        qEnglish: en,
+                        diagram: '',
+                        diagramWidth: 130,
+                        options: opts,
+                        optionImages: ['', '', '', ''],
+                        optGrid: '2x2',
+                        correct: ans,
+                        shortcut: sol
+                    });
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                document.getElementById('bulkPasteInput').value = '';
+                closeBulkModal();
+                refreshQuestionList();
+                renderAllPreviews();
+                switchSidebarTab('questions');
+                showToast(`${count} NMMS வினாக்கள் வெற்றிகரமாக இணைக்கப்பட்டன!`);
+            } else {
+                showToast("வடிவம் சரியாக இல்லை. மாதிரியைப் பார்த்து பேஸ்ட் செய்யவும்.", "error");
+            }
+        }
+
+        // Pre-loaded Realistic NMMS Sample Questions (MAT + SAT)
+        function loadNMMSSampleData() {
+            nmmsQuestions = [
+                {
+                    id: 1,
+                    subject: "MAT",
+                    direction: "வினா எண் 1 முதல் 2 வரை: எண் தொடரில் விடுபட்ட எண்ணைக் காண்க. / Q.No 1 to 2: Find the missing number in the series.",
+                    qTamil: "$3, 8, 15, 24, 35, ?$",
+                    qEnglish: "",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["$46$", "$48$", "$49$", "$50$"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "1x4",
+                    correct: "2",
+                    shortcut: "வர்க்க எண் விதி $n^2 - 1$: $2^2-1=3, 3^2-1=8, 4^2-1=15, 5^2-1=24, 6^2-1=35, 7^2-1 = 48$."
+                },
+                {
+                    id: 2,
+                    subject: "MAT",
+                    direction: "",
+                    qTamil: "$2, 5, 11, 23, 47, ?$",
+                    qEnglish: "",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["$94$", "$95$", "$96$", "$92$"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "1x4",
+                    correct: "2",
+                    shortcut: "ஒவ்வொரு எண்ணையும் $2$-ஆல் பெருக்கி $1$-ஐக் கூட்டவும்: $(47 \\times 2) + 1 = 94 + 1 = 95$."
+                },
+                {
+                    id: 3,
+                    subject: "MAT",
+                    direction: "",
+                    qTamil: "ஒரு சங்கேத மொழியில் 'APPLE' என்பது 'BQQMF' என எழுதப்பட்டால், 'MANGO' என்பது எவ்வாறு எழுதப்படும்?",
+                    qEnglish: "In a certain code, 'APPLE' is written as 'BQQMF'. How is 'MANGO' written in that code?",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["NBOHP", "NZMFN", "NBOIP", "MBOHP"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "2x2",
+                    correct: "1",
+                    shortcut: "ஒவ்வொரு எழுத்திற்கும் அடுத்த எழுத்து ($+1$): M→N, A→B, N→O, G→H, O→P = NBOHP."
+                },
+                {
+                    id: 4,
+                    subject: "MATHS",
+                    direction: "",
+                    qTamil: "$\\frac{2}{3} + \\frac{4}{5} - \\frac{1}{15}$-ன் மதிப்பு என்ன?",
+                    qEnglish: "Find the value of $\\frac{2}{3} + \\frac{4}{5} - \\frac{1}{15}$:",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["$\\frac{7}{5}$", "$\\frac{21}{15}$", "$\\frac{5}{15}$", "$\\frac{11}{15}$"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "1x4",
+                    correct: "1",
+                    shortcut: "மீ.பொ.ம $= 15$. $\\frac{10 + 12 - 1}{15} = \\frac{21}{15} = \\frac{7}{5}$."
+                },
+                {
+                    id: 5,
+                    subject: "MATHS",
+                    direction: "",
+                    qTamil: "ஒரு செங்கோண முக்கோணத்தின் பக்கங்கள் $6\\text{ செ.மீ}$ மற்றும் $8\\text{ செ.மீ}$ எனில் அதன் கர்ணம் என்ன?",
+                    qEnglish: "If the sides of a right-angled triangle are $6\\text{ cm}$ and $8\\text{ cm}$, find its hypotenuse.",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["$12\\text{ செ.மீ}$", "$14\\text{ செ.மீ}$", "$10\\text{ செ.மீ}$", "$48\\text{ செ.மீ}$"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "2x2",
+                    correct: "3",
+                    shortcut: "பிதாகரஸ் தேற்றப்படி: $\\sqrt{6^2 + 8^2} = \\sqrt{36 + 64} = \\sqrt{100} = 10\\text{ செ.மீ}$."
+                },
+                {
+                    id: 6,
+                    subject: "SCIENCE",
+                    direction: "",
+                    qTamil: "மின்னோட்டத்தின் SI அலகு என்ன?",
+                    qEnglish: "What is the SI unit of Electric Current?",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["வோல்ட் (Volt)", "ஆம்பியர் (Ampere)", "ஓம் (Ohm)", "வாட் (Watt)"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "2x2",
+                    correct: "2",
+                    shortcut: "மின்னோட்டத்தின் SI அலகு ஆம்பியர் (A); மின்னழுத்த வேறுபாடு — வோல்ட்."
+                },
+                {
+                    id: 7,
+                    subject: "SOCIAL",
+                    direction: "",
+                    qTamil: "இந்திய அரசியலமைப்புச் சட்டம் நடைமுறைக்கு வந்த நாள் எது?",
+                    qEnglish: "When did the Constitution of India come into force?",
+                    diagram: "",
+                    diagramWidth: 130,
+                    options: ["1947 ஆகஸ்ட் 15", "1949 நவம்பர் 26", "1950 ஜனவரி 26", "1952 மே 13"],
+                    optionImages: ["", "", "", ""],
+                    optGrid: "2x2",
+                    correct: "3",
+                    shortcut: "1949 நவம்பர் 26-ல் ஏற்றுக்கொள்ளப்பட்டு, 1950 ஜனவரி 26 (குடியரசு தினம்) அன்று நடைமுறைக்கு வந்தது."
+                }
+            ];
+
+            refreshQuestionList();
+            renderAllPreviews();
+            showToast("NMMS மாதிரி வினாத்தாள், OMR & விடைக்குறிப்பு தயார்!");
+        }
+
+        // Save / Load Project JSON & LocalStorage
+        function getProjectObject() {
+            return {
+                settings: {
+                    school: document.getElementById('inpSchool').value,
+                    examName: document.getElementById('inpExamName').value,
+                    paperSubject: document.getElementById('inpPaperSubject').value,
+                    className: document.getElementById('inpClass').value,
+                    time: document.getElementById('inpTime').value,
+                    marks: document.getElementById('inpMarks').value,
+                    date: document.getElementById('inpDate').value,
+                    startQNum: document.getElementById('inpStartQNum').value,
+                    watermark: document.getElementById('inpWatermark').value,
+                    instructions: document.getElementById('inpInstructions').value,
+                    pageLayout: document.getElementById('selPageLayout').value,
+                    langFilter: document.getElementById('selLangFilter').value,
+                    optStyle: document.getElementById('selOptStyle').value,
+                    fontSize: document.getElementById('selFontSize').value,
+                    borderStyle: document.getElementById('selBorderStyle').value,
+                    studentHeader: document.getElementById('chkStudentHeader').checked,
+                    includeOMR: document.getElementById('chkIncludeOMR').checked,
+                    includeAnsKey: document.getElementById('chkIncludeAnsKey').checked
+                },
+                questions: nmmsQuestions
+            };
+        }
+
+        function restoreProjectState(data) {
+            if (data.settings) {
+                const s = data.settings;
+                document.getElementById('inpSchool').value = s.school || '';
+                document.getElementById('inpExamName').value = s.examName || '';
+                document.getElementById('inpPaperSubject').value = s.paperSubject || '';
+                document.getElementById('inpClass').value = s.className || '';
+                document.getElementById('inpTime').value = s.time || '';
+                document.getElementById('inpMarks').value = s.marks || '';
+                document.getElementById('inpDate').value = s.date || '';
+                document.getElementById('inpStartQNum').value = s.startQNum || 1;
+                document.getElementById('inpWatermark').value = s.watermark || '';
+                document.getElementById('inpInstructions').value = s.instructions || '';
+                if (s.pageLayout) document.getElementById('selPageLayout').value = s.pageLayout;
+                if (s.langFilter) document.getElementById('selLangFilter').value = s.langFilter;
+                if (s.optStyle) document.getElementById('selOptStyle').value = s.optStyle;
+                if (s.fontSize) document.getElementById('selFontSize').value = s.fontSize;
+                if (s.borderStyle) document.getElementById('selBorderStyle').value = s.borderStyle;
+                document.getElementById('chkStudentHeader').checked = s.studentHeader !== false;
+                document.getElementById('chkIncludeOMR').checked = s.includeOMR !== false;
+                document.getElementById('chkIncludeAnsKey').checked = s.includeAnsKey !== false;
+            }
+            if (Array.isArray(data.questions)) {
+                nmmsQuestions = data.questions;
+            }
+            refreshQuestionList();
+            renderAllPreviews();
+        }
+
+        function saveDraftToLocalStorage() {
+            try {
+                localStorage.setItem('nmms_complete_suite_v1', JSON.stringify(getProjectObject()));
+            } catch (e) {}
+        }
+
+        function exportProjectJSON() {
+            const json = JSON.stringify(getProjectObject(), null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const slug = (document.getElementById('inpExamName').value || 'NMMS_Paper').replace(/[^a-zA-Z0-9\u0B80-\u0BFF]/g, '_');
+            a.href = url;
+            a.download = `${slug}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("NMMS வினாத்தாள் கோப்பு (.json) சேமிக்கப்பட்டது!");
+        }
+
+        function importProjectJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    restoreProjectState(parsed);
+                    showToast("சேமிக்கப்பட்ட NMMS கோப்பு திறக்கப்பட்டது!");
+                } catch (err) {
+                    showToast("தவறான கோப்பு வடிவம்!", "error");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = "";
+        }
+
+        // Confirm Clear All Questions
+        function confirmClearQuestions() {
+            if (nmmsQuestions.length === 0) return;
+            document.getElementById('confirmText').innerText = "சேர்க்கப்பட்ட அனைத்து NMMS வினாக்களையும் நீக்க விரும்புகிறீர்களா?";
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('confirmActionBtn').onclick = function() {
+                nmmsQuestions = [];
+                refreshQuestionList();
+                renderAllPreviews();
+                closeConfirmModal();
+                showToast("அனைத்து வினாக்களும் நீக்கப்பட்டன.");
+            };
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        // Utility Functions
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m]));
+        }
+
+        function nl2br(str) {
+            return str ? String(str).replace(/\n/g, '<br>') : '';
+        }
+
+        function showToast(msg, type = 'success') {
+            const banner = document.getElementById('toastBanner');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMsg').innerText = msg;
+            icon.className = type === 'error'
+                ? "fa-solid fa-circle-exclamation text-rose-400 text-sm"
+                : "fa-solid fa-circle-check text-emerald-400 text-sm";
+            banner.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => banner.classList.add('translate-y-24', 'opacity-0'), 3000);
+        }
+    </script>
+</body>
+</html>
